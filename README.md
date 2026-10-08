@@ -140,16 +140,22 @@ We are interested in the intersection of:
 The central optimization problem is:
 
 ```text
-Security
-   ↑
-   │
-   │        ?
-   │
-   │
-   └────────────────→ Performance
+high security
+  ^
+  |  o FHE / MPC — strong, but ~1000x slower
+  |
+  |        ? — is there a middle path?
+  |
+  |     o TEE — fast, but trusts the hardware vendor
+  |
+  |                                        o plain GPU
+  |                                          fast, no protection
+  +-------------------------------------------->
+                 high performance (low overhead)
 ```
 
-Can we move toward the bottom-right?
+We want to push toward the top-right: keep the protection,
+lose the overhead.
 
 Can we simultaneously reduce:
 
@@ -171,17 +177,20 @@ while reducing:
 
 One possibility is that we should **not secure every operation equally**.
 
-Consider:
+Consider a normal pipeline, fully visible to the host:
 
 ```text
-A → B → C → D → E → F
+A ──▶ B ──▶ C ──▶ D ──▶ E ──▶ F        (host sees everything)
 ```
 
-Perhaps only part of the computation is sensitive:
+Perhaps only part of it is actually sensitive, so only
+that part should pay the secure-computation cost:
 
 ```text
-A → [B → C] → D → [E] → F
-       secure          secure
+A ──▶ ┌─────────────┐ ──▶ D ──▶ ┌─────────────┐ ──▶ F
+      │   B ──▶ C   │           │      E      │
+      │  protected  │           │  protected  │
+      └─────────────┘           └─────────────┘
 ```
 
 Could a compiler automatically determine:
