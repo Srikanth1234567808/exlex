@@ -137,26 +137,6 @@ We are interested in the intersection of:
 
 **Cryptography × GPU Systems × Compilers × Security × Verification**
 
-The central optimization problem is:
-
-```text
-high security
-  ^
-  |  o FHE / MPC — strong, but ~1000x slower
-  |
-  |        ? — is there a middle path?
-  |
-  |     o TEE — fast, but trusts the hardware vendor
-  |
-  |                                        o plain GPU
-  |                                          fast, no protection
-  +-------------------------------------------->
-                 high performance (low overhead)
-```
-
-We want to push toward the top-right: keep the protection,
-lose the overhead.
-
 Can we simultaneously reduce:
 
 - information leakage
@@ -175,29 +155,8 @@ while reducing:
 
 ## A Possible Direction
 
-One possibility is that we should **not secure every operation equally**.
-
-Consider a normal pipeline, fully visible to the host:
-
-```text
-A ──▶ B ──▶ C ──▶ D ──▶ E ──▶ F        (host sees everything)
-```
-
-Perhaps only part of it is actually sensitive, so only
-that part should pay the secure-computation cost:
-
-```text
-A ──▶ ┌─────────────┐ ──▶ D ──▶ ┌─────────────┐ ──▶ F
-      │   B ──▶ C   │           │      E      │
-      │  protected  │           │  protected  │
-      └─────────────┘           └─────────────┘
-```
-
-Could a compiler automatically determine:
-
-> What must be protected?
-
-and then generate the cheapest possible secure execution?
+One possibility is that we should **not secure every operation equally** —
+protect only what must be protected, and run the rest normally.
 
 This is only one hypothesis.
 
