@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exlex"
+version = "0.2.0"
+description = "Defence-in-depth toolkit for running ML workloads on untrusted GPU hosts"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "exlex contributors" }]
+keywords = ["confidential-computing", "gpu", "tee", "sev-snp", "tdx", "mlops"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Security",
+]
+dependencies = []
+
+[project.optional-dependencies]
+attest = ["snpguest>=0.9"]
+# The FHE path needs TenSEAL, which requires Python 3.11+. The core package
+# stays dependency-free and 3.9-compatible so that installing exlex to use the
+# hardening levels does not drag in a cryptography stack or a newer floor.
+fhe = ["tenseal>=0.3.17; python_version >= '3.11'"]
+dev = ["pytest>=7", "pytest-cov>=4"]
+
+[project.scripts]
+exlex = "exlex.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/exlex-dev/exlex"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = ["bench"]
+
+[tool.ruff.lint]
+# Correctness rules only. The pyupgrade (UP) and flake8-simplify (SIM) families
+# are excluded deliberately: the codebase targets Python 3.9, and rewriting
+# typing.List to list or merging nested with-statements is churn that makes the
+# security-relevant code harder to read without fixing anything.
+select = ["E", "F", "W", "B", "C4"]
+ignore = [
+  "E501",  # line length is the formatter's job
+  "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]
+"examples/*" = ["E402"]
+"bench/*" = ["E402"]
