@@ -4,6 +4,10 @@ Each backend addresses a different concern set and has different prerequisites:
 
 * :mod:`exlex.backends.fhe` -- data confidentiality via homomorphic encryption.
 * :mod:`exlex.backends.zk` -- output correctness verification.
+* :mod:`exlex.backends.verify` -- single-instance randomised affine check.
+* :mod:`exlex.backends.pepper` -- Pepper-style batched affine check: one
+  shared challenge covers a whole batch, amortising cost without
+  strengthening the bound.
 * :mod:`exlex.backends.local` -- the local-compute posture, where scripts and
   data never leave the process at all and the host is not involved.
 
@@ -20,6 +24,7 @@ from __future__ import annotations
 
 from .fhe import FHEBackend
 from .local import LocalBackend
+from .pepper import PepperBackend
 from .slalom import FixedPoint, SlalomBackend, host_matmul
 from .verify import VerificationBackend
 from .zk import ZKBackend
@@ -28,6 +33,7 @@ __all__ = [
     "FHEBackend",
     "FixedPoint",
     "LocalBackend",
+    "PepperBackend",
     "SlalomBackend",
     "VerificationBackend",
     "ZKBackend",
