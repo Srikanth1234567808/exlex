@@ -22,16 +22,25 @@ draws and dot products per instance. A deployment that needs the verifier to
 do less work than the execution needs a real SNARK behind
 :mod:`exlex.backends.zk`, not this module. The claim is therefore
 :attr:`~exlex.concerns.Status.PARTIAL`, exactly as the single-instance check.
+
+The second idea taken from Pepper's lineage (Pantry: verifiable storage) is
+weight pinning: the Slalom path is one-time-pad private only against a
+*non-adaptive* host, and :mod:`exlex.backends.slalom` documents that a host
+which varies the weights between calls can binary-search a masked value.
+:class:`PinnedWeights` closes that narrowly -- hash-pin the weight matrix
+once, refuse any matrix whose digest differs -- without claiming anything
+about the weights' secrecy, which remains plaintext to the host.
 """
 
 from __future__ import annotations
 
+import hashlib
 import secrets
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 from ..circuit import Circuit, PolynomialLayer
 from ..concerns import Backend, Claim, Concern, Status
-from ..errors import UnsupportedComputation
+from ..errors import ExlexError, UnsupportedComputation
 
 _CHALLENGE_LOW = -1.0
 _CHALLENGE_HIGH = 1.0
@@ -168,3 +177,69 @@ class PepperBackend(Backend):
                     "batched check does not apply to it. Supply a real proof"
                 )
         return None
+
+
+class PinnedWeights:
+    """Pantry-style weight pinning for the adaptive-host gap.
+
+    The Slalom mask is a one-time pad only if the host answers every call
+    with the *same* weight matrix it was given. A host that varies the
+    weights between calls can binary-search a masked input one bit at a
+    time, and :mod:`exlex.backends.slalom` leaves that open. Pinning the
+    matrix once -- by SHA-256 over a canonical encoding -- and refusing
+    anything else turns that adaptive attack into a fail-closed error.
+
+    What this does not do: hide the weights. They remain plaintext to the
+    host, exactly as under the FHE path. This is integrity of the *reference*
+    copy, not confidentiality.
+    """
+
+    def __init__(self, weights: Sequence[Sequence[float]]) -> None:
+        self.shape: Tuple[int, int] = _weight_shape(weights)
+        self.digest: str = _weight_digest(weights)
+
+    def check(self, weights: Sequence[Sequence[float]]) -> bool:
+        """Whether ``weights`` are exactly the pinned matrix."""
+        try:
+            if _weight_shape(weights) != self.shape:
+                return False
+            return _weight_digest(weights) == self.digest
+        except (ValueError, TypeError):
+            return False
+
+    def require(self, weights: Sequence[Sequence[float]]) -> None:
+        """Fail closed on any weight change.
+
+        Raises:
+            ExlexError: when the matrix differs from the pinned one, since a
+                changed matrix means the mask's one-time-pad argument no
+                longer holds and further calls would leak.
+        """
+        if not self.check(weights):
+            raise ExlexError(
+                "weight matrix differs from the pinned digest; refusing: an "
+                "adaptive host that varies weights between calls can "
+                "binary-search a masked input"
+            )
+
+
+def _weight_shape(weights: Sequence[Sequence[float]]) -> Tuple[int, int]:
+    rows = len(weights)
+    if rows == 0:
+        raise ValueError("cannot pin an empty weight matrix")
+    width = len(weights[0])
+    for row in weights:
+        if len(row) != width:
+            raise ValueError("cannot pin a ragged weight matrix")
+    return (rows, width)
+
+
+def _weight_digest(weights: Sequence[Sequence[float]]) -> str:
+    rows, width = _weight_shape(weights)
+    hasher = hashlib.sha256()
+    hasher.update(f"{rows}x{width};".encode("ascii"))
+    for row in weights:
+        for value in row:
+            hasher.update(repr(float(value)).encode("ascii"))
+            hasher.update(b";")
+    return hasher.hexdigest()

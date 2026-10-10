@@ -11,9 +11,10 @@ import pytest
 
 import exlex
 from exlex.backends import PepperBackend
+from exlex.backends.pepper import PinnedWeights
 from exlex.circuit import AffineLayer, BiasLayer, Circuit, PolynomialLayer
 from exlex.concerns import Concern, Status
-from exlex.errors import UnsupportedComputation
+from exlex.errors import ExlexError, UnsupportedComputation
 
 WEIGHTS = [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]
 BIAS = [0.5, 0.5]
@@ -119,3 +120,29 @@ def test_available_and_protect_compose():
     assert PepperBackend().available() is None
     report = exlex.protect(backends=[PepperBackend()])
     assert report.status(Concern.CORRECTNESS) is Status.PARTIAL
+
+
+def test_pinned_weights_accepts_identical_matrix():
+    weights = [[0.5, -1.25], [2.0, 0.0]]
+    pinned = PinnedWeights(weights)
+    assert pinned.check([[0.5, -1.25], [2.0, 0.0]])
+    pinned.require([[0.5, -1.25], [2.0, 0.0]])
+
+
+def test_pinned_weights_rejects_adaptive_change():
+    weights = [[0.5, -1.25], [2.0, 0.0]]
+    pinned = PinnedWeights(weights)
+    assert not pinned.check([[0.5, -1.25], [2.0, 0.5]])
+    assert not pinned.check([[0.5, -1.25]])
+    with pytest.raises(ExlexError, match="differs from the pinned digest"):
+        pinned.require([[0.5, -1.25], [2.0, 0.5]])
+
+
+def test_pinned_weights_rejects_ragged_or_empty():
+    with pytest.raises(ValueError):
+        PinnedWeights([])
+    with pytest.raises(ValueError):
+        PinnedWeights([[1.0], [1.0, 2.0]])
+    pinned = PinnedWeights([[1.0, 2.0]])
+    assert not pinned.check([])
+    assert not pinned.check("not a matrix")

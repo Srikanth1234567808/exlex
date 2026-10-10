@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from .fhe import FHEBackend
 from .local import LocalBackend
-from .pepper import PepperBackend
+from .pepper import PepperBackend, PinnedWeights
 from .slalom import FixedPoint, SlalomBackend, host_matmul
 from .verify import VerificationBackend
 from .zk import ZKBackend
@@ -34,6 +34,7 @@ __all__ = [
     "FixedPoint",
     "LocalBackend",
     "PepperBackend",
+    "PinnedWeights",
     "SlalomBackend",
     "VerificationBackend",
     "ZKBackend",

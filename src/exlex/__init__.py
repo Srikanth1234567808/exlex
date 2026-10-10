@@ -30,6 +30,7 @@ from .backends import (
     FixedPoint,
     LocalBackend,
     PepperBackend,
+    PinnedWeights,
     SlalomBackend,
     VerificationBackend,
     ZKBackend,
@@ -68,6 +69,7 @@ from .session import (
     session,
     set_guard,
 )
+
 __version__ = "0.2.0"
 
 __all__ = [
@@ -91,6 +93,7 @@ __all__ = [
     "PolicyError",
     "PolynomialLayer",
     "PepperBackend",
+    "PinnedWeights",
     "ProtectionReport",
     "REPORT_ORDER",
     "ResidencyGuard",

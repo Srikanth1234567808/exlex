@@ -25,7 +25,14 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Sequence
 
-from .backends import FHEBackend, LocalBackend, PepperBackend, SlalomBackend, VerificationBackend, ZKBackend
+from .backends import (
+    FHEBackend,
+    LocalBackend,
+    PepperBackend,
+    SlalomBackend,
+    VerificationBackend,
+    ZKBackend,
+)
 from .concerns import Concern, Status
 from .report import ProtectionReport, compose
 
@@ -68,7 +75,14 @@ def protect(
         for backend in chosen:
             if not isinstance(
                 backend,
-                (FHEBackend, ZKBackend, LocalBackend, PepperBackend, SlalomBackend, VerificationBackend),
+                (
+                    FHEBackend,
+                    ZKBackend,
+                    LocalBackend,
+                    PepperBackend,
+                    SlalomBackend,
+                    VerificationBackend,
+                ),
             ):
                 raise ValueError(
                     f"unsupported backend {type(backend).__name__}; subclass "
